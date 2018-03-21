@@ -4,17 +4,30 @@ import sys
 import RPi.GPIO as GPIO
 import Adafruit_DHT
 from RPLCD.i2c import CharLCD
-from identify_user import identify
+#from identify_user import identify
+from object_detector import detect
 
 
 absolute_center = 1240.0 / 2.0
 projection_factor = absolute_center / 26.0
+ignore_motion = False
 
 def f(x):
   #print(x)
   return x
 
-def identify_and_track():
+def identify():
+    return detect()
+
+def disable_motion_callback():
+    global ignore_motion
+    ignore_motion = True
+
+def enable_motion_callback():
+    global ignore_motion
+    ignore_motion = False
+
+def identify_and_adjust():
   print("start")
   val = identify()
   print("stop")
@@ -22,14 +35,14 @@ def identify_and_track():
     print("found face. adjusting camera")
     amount = val - absolute_center
     degree = amount / projection_factor
-    print("DEBUG current val, amount, degree: ") 
+    print("DEBUG current val, amount, degree: ")
     print("DEBUG", val, amount, degree)
     if abs(amount) > 100:
       print("adjustment of more than 100 needed")
       if amount < 0:
-        pantiltlib.move_camera(-1 * degree, None)
+        pantiltlib.move_camera(+1 * degree, None)
       else:
-        pantiltlib.move_camera(-1 * degree, None)
+        pantiltlib.move_camera(+1 * degree, None)
 
 # -------------------
 
@@ -54,7 +67,7 @@ def print_motion_detected(n):
 
 def toggleLED(channel, onoff):
     GPIO.output(channel, onoff)
- 
+
 def get_control_state():
     state = int(GPIO.input(CTRL_LED_PIN))
     return state
@@ -69,18 +82,25 @@ def pan_scan_callback(pos):
     return None
 
 def camera_scan_on_motion():
+    disable_motion_callback()
     print("motion detected. strting scan")
     scan_results = pantiltlib.pan_scan(pan_scan_callback)
     print(scan_results)
-    position = list(filter(lambda x: x != None, scan_results))[0]
-    if position: 
+    positions = list(filter(lambda x: x != None, scan_results))
+    if not positions:
+        print("no face detected")
+    else:
+        position = positions[0]
         print("selecting position: ", position)
         pantiltlib.do_pan(None, position)
-        for i in range(6):
+        for i in range(100):
             print("tracking iteration: ",i)
-            identify_and_track()
+            identify_and_adjust()
+    enable_motion_callback()
 
 def callback(channel):
+    if ignore_motion:
+      return
     state = get_control_state()
     global global_move_count
     print('Motion detected!')
@@ -119,7 +139,7 @@ LED_PIN = 26
 GPIO.setup(LED_PIN, GPIO.OUT)
 GPIO.output(LED_PIN, False)
 
-try: 
+try:
     # lcd --------
     #lcd.clear()
     #lcd.home()

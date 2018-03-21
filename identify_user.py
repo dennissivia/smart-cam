@@ -15,9 +15,11 @@ import time
 #video_capture = cv2.VideoCapture(0)
 
 camera = picamera.PiCamera()
-camera.resolution = (320, 240)
-frame = np.empty((240, 320, 3), dtype=np.uint8)
+#camera.resolution = (320, 240)
+#frame = np.empty((240, 320, 3), dtype=np.uint8)
 
+camera.resolution = (1024, 768)
+frame = np.empty((768, 1024, 3), dtype=np.uint8)
 
 # Load a sample picture and learn how to recognize it.
 obama_image = face_recognition.load_image_file("obama.jpg")
@@ -57,11 +59,11 @@ def identify():
     camera.capture(frame, format="rgb")
 
     # Resize frame of video to 1/4 size for faster face recognition processing
-    # small_frame = cv2.resize(frame, (0, 0), fx=0.25, fy=0.25)
+    small_frame = cv2.resize(frame, (0, 0), fx=0.25, fy=0.25)
 
     # Convert the image from BGR color (which OpenCV uses) to RGB color (which face_recognition uses)
     # rgb_small_frame = small_frame[:, :, ::-1]
-    rgb_small_frame = frame
+    rgb_small_frame = small_frame
 
     # Only process every other frame of video to save time
     if process_this_frame:
@@ -112,11 +114,14 @@ def identify():
         cv2.putText(frame, name, (left + 6, bottom - 6), font, 1.0, (255, 255, 255), 1)
 
     # Display the resulting image
-    #cv2.imshow('Video', frame)
+    cv2.imshow('Video', frame)
+    cv2.waitKey(5) & 0xFF == ord('q')
+
     # Hit 'q' on the keyboard to quit!
-    #if cv2.waitKey(1) & 0xFF == ord('q'):
-    #    break
+    #while True:
+    #    if cv2.waitKey(1) & 0xFF == ord('q'):
+    #        break
     # Release handle to the webcam
     #video_capture.release()
-    #cv2.destroyAllWindows()
+    cv2.destroyAllWindows()
     return center
