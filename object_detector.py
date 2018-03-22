@@ -12,6 +12,7 @@ import argparse
 import imutils
 import time
 import cv2
+import datetime
 
 
 MIN_CONFIDENCE=0.7
@@ -34,12 +35,19 @@ vs = VideoStream(src=0, resolution=(1024,768)).start()
 #camera = PiCamera()
 #camera.resolution = (1024, 768)
 
+
 # initialize the input queue (frames), output queue (detections),
 # and the list of actual detections returned by the child process
-inputQueue = Queue(maxsize=1)
-outputQueue = Queue(maxsize=1)
-detections = None
-cv2.namedWindow("Security-Cam")
+inputQueue       = Queue(maxsize=1)
+outputQueue      = Queue(maxsize=1)
+detections       = None
+show_high_gui    = False
+write_video_file = False
+
+if show_high_gui:
+    cv2.namedWindow("Security-Cam")
+if write_video_file:
+    video_output = cv2.VideoWriter('security-cam-out.avi',cv2.VideoWriter_fourcc('M','J','P','G'), 10, (1024,768))
 
 def classify_frame_process(net, inputQueue, outputQueue):
   while True:
@@ -120,18 +128,21 @@ def detect():
         cv2.rectangle(frame, (startX, startY), (endX, endY), COLORS[idx], 2)
         y = startY - 15 if startY - 15 > 15 else startY + 15
         cv2.putText(frame, label_string, (startX, y), cv2.FONT_HERSHEY_SIMPLEX, 0.5, COLORS[idx], 2)
+        # just for debugging
+        now = datetime.datetime.now()
+        cv2.putText(frame, now.strftime("%Y-%m-%d %H:%M"), (10, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, COLORS[0], 2)
 
         center = (startX + endX ) / 2
         detected_objects.append((label, center))
 
-        ## show the output frame
-        cv2.imshow("Security-Cam", frame)
-        cv2.waitKey(10)
-        #print("after waitkey")
-        ##key = cv2.waitKey(500) & 0xFF
-        ##if key == ord("q"):
-        ##  return
-        #cv2.destroyAllWindows()
-        return detected_objects
   else:
       print("nothing detected")
+  ## show the output frame
+  if show_high_gui:
+      cv2.imshow("Security-Cam", frame)
+      cv2.waitKey(10)
+      #cv2.destroyAllWindows()
+  if write_video_file:
+      video_output.write(frame)
+  cv2.imwrite("security-cam.jpg", frame)
+  return detected_objects
