@@ -10,6 +10,9 @@ from nfc.clf import RemoteTarget
 from object_detector import detect
 from threading import Thread
 
+from gtts import gTTS
+from pydub import AudioSegment
+from pydub.playback import play
 
 
 absolute_center = 1024.0 / 2.0
@@ -150,6 +153,12 @@ def buzzer_alert():
         GPIO.output(BUZZER_PIN, 0)
 	time.sleep(0.2)
 
+def tts_alert():
+    audio_file = "tracking-cam-alert.mp3"
+    tts = gTTS(text="Hello World!", lang="en")
+    tts.save(audio_file)
+    sound = AudioSegment.from_mp3(audio_file)
+    play(sound)
 
 def camera_scan_on_motion():
     register_scan()
@@ -163,6 +172,7 @@ def camera_scan_on_motion():
         position = positions[0]
         print("Person detected. Alert and tracking initiated.")
 	buzzer_alert()
+        tts_alert()
         # print("selecting position: ", position)
         pantiltlib.do_pan(None, position)
         track_person()
@@ -208,15 +218,24 @@ def check_nfc_tag():
 # We could add an argunent, like a map of arguments, like gpio object etc..
 def nfc_reader_thread():
     global global_program_ending
-    while global_program_ending is False:
+    while not global_program_ending:
         try:
             check_nfc_tag()
             # print("polling nfc reader")
             time.sleep(0.6)
         except:
             print("nfc reader thread failed. Ignoring all errors", sys.exc_info())
+            print("global program ending: ", global_program_ending)
             time.sleep(10) # make sure we dont have a tight exception loop
 
+def http_server_thread():
+    import SimpleHTTPServer
+    import SocketServer
+    port = 8000
+    Handler = SimpleHTTPServer.SimpleHTTPRequestHandler
+    httpd = SocketServer.TCPServer(("", port), Handler)
+    print("http server started at port ", port)
+    httpd.serve_forever()
 
 def callback(channel):
     state = get_control_state()
@@ -257,7 +276,7 @@ GPIO.output(LED_PIN, False)
 # GPIO.setmode(GPIO.BOARD)
 # PIN_A = 31
 
-BUZZER_PIN = 6
+BUZZER_PIN = 12
 GPIO.setmode(GPIO.BCM)
 GPIO.setup(BUZZER_PIN, GPIO.OUT)
 GPIO.output(BUZZER_PIN,0)
@@ -273,28 +292,30 @@ try:
 
     nfc_thread = Thread(target = nfc_reader_thread)
     nfc_thread.start()
+    http_thread = Thread(target = http_server_thread)
+    http_thread.start()
 
     pantiltlib.tilt_dance()
 
     while True:
         print_move_count(global_move_count)
         identify_and_adjust()
-        print("scan pending, scan in progress: ", scan_pending, scan_in_progress)
         if scan_pending is True:
             time_since_last_scan = (current_timestamp() -  last_scan_time)
-            if time_since_last_scan < 20:
-                print("Last scan is less than 20s ago. deferring.")
+            if time_since_last_scan < 300:
+                print("Last scan is less than 300s ago. deferring.", time_since_last_scan)
             else:
                 print("STATE: performing pending scan")
                 scan_pending = False
                 camera_scan_on_motion()
-        time.sleep(0.5)
+        time.sleep(0.01)
 
 
 except KeyboardInterrupt:
     global_program_ending = True
     print("stopping additional threads...")
     nfc_thread.join()
+    http_thread.join()
     print("Done.")
 
 finally:
