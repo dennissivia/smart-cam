@@ -20,12 +20,12 @@ def flash_lights():
     t = time.time()
     r, g, b = [int(x*255) for x in  colorsys.hsv_to_rgb(((t*100) % 360) / 360.0, 1.0, 1.0)]
     r, g, b = (255,255,255)
-    for i in range(1,6):
+    for i in range(2,6):
         pantilthat.set_pixel(i, r, g, b)
     pantilthat.show()
 
 def color_to_rgb(color):
-  print("color requested: ", color)
+  # print("color requested: ", color)
   if color == "red":
     return (255,0,0)
   elif color == "green":
@@ -36,18 +36,23 @@ def color_to_rgb(color):
     return (255,255,0)
   elif color == "white":
     return (255,255,255)
+  elif color == "rose":
+    return (255,192,203)
+  elif color == "pink":
+    return (255,20,147)
   elif color == "off":
     return (0,0,0)
   else:
     return (0,0,0)
 
-def set_light_color(color, index=None):
+def set_light_color(color, indices=None):
     (r,g,b) = color_to_rgb(color)
-    print("rgb requested: ", (r,g,b))
-    if index is None:
+    # print("rgb requested: ", (r,g,b))
+    if indices is None:
         pantilthat.set_all(r,g,b)
     else:
-        pantilthat.set_pixel(index, r,g,b)
+        for idx in indices:
+            pantilthat.set_pixel(idx, r,g,b)
     pantilthat.show()
 
 
@@ -90,21 +95,25 @@ def pan_scan_step(pos, f):
     return ret
 
 def pan_scan(f):
-  pantilthat.pan(-90)
   positions = mkrange(-90,90,15)
-  print(positions)
+
+  # move to the first position without invoking the callback
+  # this makes sure we dont get a camera info during the move
+  pantilthat.pan(positions[0])
+  time.sleep(0.5)
+
+  # print(positions)
   result = []
   for pos in positions:
     result.append(pan_scan_step(pos, f))
-    time.sleep(0.5)
+    time.sleep(0.2)
 
   rev_positions = mkrange(90, 0, 15)
-  print(rev_positions)
+  # print(rev_positions)
 
   for pos in rev_positions:
     result.append(pan_scan_step(pos, f))
-    time.sleep(0.5)
-
+    time.sleep(0.2)
   return result
 
 
