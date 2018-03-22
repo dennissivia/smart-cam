@@ -50,7 +50,7 @@ def identify():
     face_encodings = []
     face_names = []
     process_this_frame = True
-    center = None 
+    center = None
 
     # ret, frame = video_capture.read()
     # camera.start_preview()
@@ -72,7 +72,7 @@ def identify():
         face_encodings = face_recognition.face_encodings(rgb_small_frame, face_locations)
         print("detected face at location: ", face_locations)
 
-        if(len(face_locations) == 1): 
+        if(len(face_locations) == 1):
             top, right, bottom, left = face_locations[0]
             center = (left*4 + right*4) / 2
             print("face center point is at: ", center)
@@ -96,7 +96,7 @@ def identify():
             face_names.append(name)
 
     process_this_frame = not process_this_frame
-    
+
     # Display the results
     for (top, right, bottom, left), name in zip(face_locations, face_names):
         # Scale back up face locations since the frame we detected in was scaled to 1/4 size
@@ -115,7 +115,7 @@ def identify():
 
     # Display the resulting image
     cv2.imshow('Video', frame)
-    cv2.waitKey(5) & 0xFF == ord('q')
+    cv2.waitKey(50) & 0xFF == ord('q')
 
     # Hit 'q' on the keyboard to quit!
     #while True:
