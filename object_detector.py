@@ -39,6 +39,7 @@ vs = VideoStream(src=0, resolution=(1024,768)).start()
 inputQueue = Queue(maxsize=1)
 outputQueue = Queue(maxsize=1)
 detections = None
+cv2.namedWindow("Security-Cam")
 
 def classify_frame_process(net, inputQueue, outputQueue):
   while True:
@@ -123,11 +124,9 @@ def detect():
         center = (startX + endX ) / 2
         detected_objects.append((label, center))
 
-        #print("showing frame")
         ## show the output frame
-        cv2.namedWindow("detected objects")
-        cv2.imshow("Frame", frame)
-        cv2.waitKey(50)
+        cv2.imshow("Security-Cam", frame)
+        cv2.waitKey(10)
         #print("after waitkey")
         ##key = cv2.waitKey(500) & 0xFF
         ##if key == ord("q"):
